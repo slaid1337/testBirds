@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Idle Birds Factory</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <!-- Yandex.RTB -->
+  <script>window.yaContextCb=window.yaContextCb||[]</script>
+  <script src="https://yandex.ru/ads/system/context.js" async></script>
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=720 height=1280></canvas>
+      <div id="YandexRTBBunner1">
+        <!-- Yandex.RTB R-A-2066355-18 -->
+        <div id="yandex_rtb_R-A-2066355-18"></div>
+        <script>window.yaContextCb.push(()=>{
+          Ya.Context.AdvManager.render({
+            renderTo: 'yandex_rtb_R-A-2066355-18',
+            blockId: 'R-A-2066355-18'
+          })
+        })
+        </script>
+      </div>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+      <div id="unity-warning"> </div>
+      <div id="unity-footer">
+        <div id="unity-webgl-logo"></div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-build-title">Idle Birds Factory</div>
+      </div>
+    </div>
+    <script>
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var warningBanner = document.querySelector("#unity-warning");
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/birds_Alpha.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/birds_Alpha.data.unityweb",
+        frameworkUrl: buildUrl + "/birds_Alpha.framework.js.unityweb",
+        codeUrl: buildUrl + "/birds_Alpha.wasm.unityweb",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "VysralGames",
+        productName: "Idle Birds Factory",
+        productVersion: "1.2.1",
+        showBanner: unityShowBanner,
+      };
+
+      // By default Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        // Avoid draining fillrate performance on mobile devices,
+        // and default/override low DPI mode on mobile browsers.
+        config.devicePixelRatio = 1;
+        unityShowBanner('WebGL builds are not supported on mobile devices.');
+      } else {
+        var ratio = canvas.width / canvas.height;
+        canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+        canvas.width = canvas.height * ratio;
+      }
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          loadingBar.style.display = "none";
+          fullscreenButton.onclick = () => {
+            unityInstance.SetFullscreen(1);
+          };
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
+
+<script src="https://yandex.ru/games/sdk/v2"></script>
+<script type="text/javascript">
+  var player;
+  var sdk;
+  var payments = null;
+  
+  YaGames.init({
+        adv: {
+            onAdvClose: wasShown => {
+                  console.info('adv closed!');
+            }
+        }
+    })
+    .then(ysdk => {
+        sdk = ysdk;
+        sdk.adv.showFullscreenAdv({callbacks:{}});
+  });
+
+  function auth(){
+    initPlayer().then(() =>{
+            getUser();
+        }).catch(err => {
+         sdk.auth.openAuthDialog().then(() => {
+          initPlayer();
+          getUser();
+      });
+      });
+    }
+
+
+  function initPlayer(){
+    console.log('InitPlayerTry')
+    return sdk.getPlayer().then(_player => {
+            console.log('InitPlayer2');
+            player = _player;
+        });}
+
+  function getUser(){
+      console.log('try to get Name');
+      var data = player.getName();
+      unityI.SendMessage('YandexSDK', 'AuthenticateSuccess', data);
+      console.log('getName done');
+
+  }
+
+  function Start(){
+    var data = sdk.environment;
+    console.log(data);
+    unityI.SendMessage('SDKLAND','GettingLang',JSON.stringify(data));
+  }
+
+  function showFullscrenAd(){
+        sdk.adv.showFullscreenAdv({
+          callbacks: {
+            onClose: function(wasShown) {},
+            onError: function(error) {}
+          }
+        })
+      }
+
+     function showRewardedAd(id){
+        sdk.adv.showRewardedVideo({
+        callbacks: {
+            onOpen: () => {},
+            onRewarded: () => {
+                unityI.SendMessage('YandexSDK', 'RewardGetting');
+                console.log('Rewarded! Id: ' + id);},
+            onClose: () => {},
+            onError: (e) => {
+                var data = {"id" : id, "error" : error};
+                console.log('Error while open video ad:', e);
+            }
+          }
+        })
+      }
+
+      function showRewardedAdUnlock(id){
+        sdk.adv.showRewardedVideo({
+        callbacks: {
+            onOpen: () => {},
+            onRewarded: () => {
+                unityI.SendMessage('YandexSDK', 'RewardGettingUnlockStage');
+                console.log('Rewarded! Id: ' + id);},
+            onClose: () => {},
+            onError: (e) => {
+                var data = {"id" : id, "error" : error};
+                console.log('Error while open video ad:', e);
+            }
+          }
+        })
+      }
+
+      function showRewardedAdBooster(id){
+        sdk.adv.showRewardedVideo({
+        callbacks: {
+            onOpen: () => {},
+            onRewarded: () => {
+                unityI.SendMessage('YandexSDK', 'RewardGettingBooster');
+                console.log('Rewarded! Id: ' + id);},
+            onClose: () => {},
+            onError: (e) => {
+                var data = {"id" : id, "error" : error};
+                console.log('Error while open video ad:', e);
+            }
+          }
+        })
+      }
+
+</script>
+  </body>
+</html>
